@@ -14,7 +14,6 @@
         private int frm;
         private List<string> MFERFormat;
         private byte[] bf;
-        private Waveview cForm;
 
         public MferParser()
         {
@@ -39,7 +38,6 @@
                 int point = 0;
                 this.frm = 0;
                 this.wQueue = null;
-                this.cForm = null;
                 this.TLVanz(0, 0, point, (int)length, this.bf);
                 if (this.frm > 1)
                 {
@@ -47,17 +45,13 @@
                     for (int index = 1; index <= this.frm; ++index)
                         Console.WriteLine("FRM:" + index.ToString());
                 }
-                this.cForm = this.GetDefInf(0, 0);
-                if (this.cForm.channel >= 1)
+                if (wQueue.channel >= 1)
                 {
                     Console.WriteLine("CH:1");
-                    for (int index = 1; index <= this.cForm.channel; ++index)
+                    for (int index = 1; index <= this.wQueue.channel; ++index)
                         Console.WriteLine("CN:" + index.ToString());
                 }
-                var dispCHN = 2;
-                var dispFRM = 0;
-                this.WaveInit(dispCHN, dispFRM);
-                mferFile.Wave = this.cForm.wave;
+                mferFile.Wave = this.wQueue.wLink.wave;
 
             }
 
@@ -91,6 +85,7 @@
             Waveview waveview = null;
             while (dtLen > point)
             {
+                Console.WriteLine("Point: " + point);
                 try
                 {
                     if (waveview == null)
@@ -114,11 +109,11 @@
                         }
                     }
                     bool flag = true;
-                    if (bf[point] == (byte)128)
+                    if (bf[point] == MFERdef.MWF_END)
                         return 0;
                     int num1;
                     int len;
-                    if (bf[point] == (byte)0)
+                    if (bf[point] == MFERdef.MWF_ZRO)
                     {
                         num1 = 0;
                         string str = "00 ";
@@ -131,9 +126,9 @@
                     else
                     {
                         int num2 = 1;
-                        if (((int)bf[point] & 32) > 0)
+                        if ((bf[point] & 32) > 0)
                         {
-                            if (bf[point] == (byte)63)
+                            if (bf[point] == MFERdef.MWF_ATT)
                                 ++num2;
                             while (((int)bf[point + num2] & 128) > 0)
                                 ++num2;
@@ -158,6 +153,7 @@
                         int dt;
                         switch (bf[point])
                         {
+                            // MWF_BLE
                             case 1:
                                 if (len < 2)
                                 {
@@ -175,6 +171,7 @@
                                 else
                                     break;
                                 break;
+                            // MWF_BLK
                             case 4:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 waveview.block = dt;
@@ -185,12 +182,15 @@
                                     break;
                                 }
                                 break;
+                            //MWF_CHN
                             case 5:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 waveview.channel = dt;
                                 this.SetChannel(dt);
                                 break;
+                            //MWF_SEQ
                             case 6:
+
                                 this.GetData32(out dt, len, point + num1, bf);
                                 waveview.sequence = dt;
                                 if (ch == 0)
@@ -200,19 +200,22 @@
                                     break;
                                 }
                                 break;
+                            // MWF_WFM
                             case 8:
-                                this.GetData16(out dt, len, point + num1, bf);
-                                int index1 = 0;
-                                while (index1 < MFERdef.WaveformCode.Length && MFERdef.WaveformCode[index1] != dt)
-                                    ++index1;
+                                //this.GetData16(out dt, len, point + num1, bf);
+                                //int index1 = 0;
+                                //while (index1 < MFERdef.WaveformCode.Length && MFERdef.WaveformCode[index1] != dt)
+                                //    ++index1;
                                 break;
+                            // MWF_LDN
                             case 9:
                                 this.GetData16(out dt, len, point + num1, bf);
-                                int index2 = 0;
-                                while (index2 < MFERdef.ECGleadCode.Length && MFERdef.ECGleadCode[index2] != dt)
-                                    ++index2;
+                                //int index2 = 0;
+                                //while (index2 < MFERdef.ECGleadCode.Length && MFERdef.ECGleadCode[index2] != dt)
+                                //    ++index2;
                                 waveview.wave_lead = dt;
                                 break;
+                            // MWF_DTP
                             case 10:
                                 this.GetData16(out dt, len, point + num1, bf);
                                 waveview.dType = dt;
@@ -221,10 +224,11 @@
                                     for (int chn = 1; chn <= waveview.channel; ++chn)
                                         this.GetDefInf(chn, this.frm).sequence = dt;
                                 }
-                                int index3 = 0;
-                                while (index3 < MFERdef.dTypeCode.Length && MFERdef.dTypeCode[index3] != dt)
-                                    ++index3;
+                                //int index3 = 0;
+                                //while (index3 < MFERdef.dTypeCode.Length && MFERdef.dTypeCode[index3] != dt)
+                                //    ++index3;
                                 break;
+                            // MWF_IVL
                             case 11:
                                 if (len <= 6 && len >= 3)
                                 {
@@ -250,6 +254,7 @@
                                     break;
                                 }
                                 break;
+                            // MWF_SEN
                             case 12:
                                 if (len <= 6 && len >= 3)
                                 {
@@ -289,6 +294,7 @@
                                 else
                                     break;
                                 break;
+                            // MWF_CMP
                             case 14:
                                 this.GetData16(out dt, len, point + num1, bf);
                                 if (dt != 0 && dt == 1)
@@ -303,9 +309,11 @@
                                     break;
                                 }
                                 break;
+                            // MWF_FLT
                             case 17:
                                 int num10 = len;
                                 break;
+                            // MWF_NUL
                             case 18:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 waveview.nil = dt;
@@ -313,6 +321,7 @@
                             case 19:
                             case 65:
                                 break;
+                            // MWF_WAV
                             case 30:
                                 int num11 = 1;
                                 var defInf0 = this.GetDefInf(0, this.frm);
@@ -370,17 +379,18 @@
                                 int num14 = len / num11;
                                 waveview = null;
                                 break;
+                            // MWF_ATT
                             case 63:
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
-                                flag = false;
                                 break;
-
+                            // MWF_SET
                             case 103:
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
-                                flag = false;
                                 break;
+                            // MWF_END
                             case 128:
                                 return 0;
+                            // MWF_TIM
                             case 133:
                                 string text69 = "";
                                 if (len >= 1)
@@ -408,7 +418,6 @@
                                 break;
                         }
                     }
-                    int num15 = flag ? 1 : 0;
                     point += num1 + len;
                 }
                 catch
@@ -551,12 +560,6 @@
                 defInf2.sampling = defInf1.sampling;
                 defInf2.sequence = defInf1.sequence;
             }
-        }
-
-        public void WaveInit(int chn, int frm)
-        {
-            this.cForm = this.GetDefInf(chn, frm);
-            this.cForm.ViewInit(0);
         }
     }
 }
