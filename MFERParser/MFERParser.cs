@@ -4,7 +4,7 @@
     {
         public string MeasurementTime { get; set; }
         public int Channel;
-        public int wave_lead;
+        public int WaveLead;
         public int Block;
         public int Sequence;
         public double Sampling;
@@ -166,7 +166,7 @@
                                 //int index2 = 0;
                                 //while (index2 < MFERdef.ECGleadCode.Length && MFERdef.ECGleadCode[index2] != dt)
                                 //    ++index2;
-                                mferFile.wave_lead = dt;
+                                mferFile.WaveLead = dt;
                                 break;
                             // MWF_DTP
                             case 10:
