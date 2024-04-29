@@ -2,113 +2,80 @@
 {
     public class MferFile
     {
-        public short[] Wave { get; set; }
-        public string MeasureTime { get; set; }
-    }
+        public string MeasurementTime { get; set; }
+        public int Channel;
+        public int wave_lead;
+        public int Block;
+        public int Sequence;
+        public double Sampling;
+        public double Resolution;
+        public int DType;
+        public int Offset;
+        public int Nil;
+        public int pID;
+        public int pData;
+        public Dictionary<(int, int), short[]> Waves;
+        public MferFile()
+        {
+            Waves = new Dictionary<(int, int), short[]>();
+        }
 
+        /// <summary>
+        /// Get the wave data for a specific channel and frame
+        /// </summary>
+        /// <param name="chn">The channel</param>
+        /// <param name="frm">The frame</param>
+        /// <returns></returns>
+        public short[] GetWave(int chn, int frm)
+        {
+            return Waves[(chn, frm)];
+        }
+
+        public void SetWave(int chn, int frm, short[] wave)
+        {
+            Waves[(chn, frm)] = wave;
+        }
+    }
     public class MferParser
     {
         private bool endian;
-        private Waveview wQueue;
-        private int pID;
         private int frm;
-        private List<string> MFERFormat;
         private byte[] bf;
+        private MferFile mferFile;
 
         public MferParser()
         {
-            this.wQueue = null;
-            this.pID = 0;
-            this.MFERFormat = new List<string>();
         }
         public MferFile Parse(string filePath)
         {
-            var mferFile = new MferFile();
-
-            // Open the file and read its contents
-            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                long length = fileStream.Length;
-                this.bf = new byte[length];
-                int num = fileStream.Read(this.bf, 0, (int)length);
-                fileStream.Close();
-                if (num <= 0)
-                    return null;
-                this.endian = false;
-                int point = 0;
-                this.frm = 0;
-                this.wQueue = null;
-                this.TLVanz(0, 0, point, (int)length, this.bf);
-                if (this.frm > 1)
-                {
-                    Console.WriteLine("FRM:1");
-                    for (int index = 1; index <= this.frm; ++index)
-                        Console.WriteLine("FRM:" + index.ToString());
-                }
-                if (wQueue.channel >= 1)
-                {
-                    Console.WriteLine("CH:1");
-                    for (int index = 1; index <= this.wQueue.channel; ++index)
-                        Console.WriteLine("CN:" + index.ToString());
-                }
-                mferFile.Wave = this.wQueue.wLink.wave;
-
-            }
-
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            long length = fileStream.Length;
+            this.bf = new byte[length];
+            int num = fileStream.Read(this.bf, 0, (int)length);
+            fileStream.Close();
+            if (num <= 0)
+                return null;
+            this.endian = false;
+            int point = 0;
+            this.frm = 0;
+            this.TLVanz(0, 0, point, (int)length, this.bf);
             return mferFile;
         }
 
-        private Waveview GetDefInf(int chn, int frm)
-        {
-            Waveview waveview = null;
-            for (Waveview defInf = this.wQueue; defInf != null; defInf = defInf.wLink)
-            {
-                if (defInf.chn == chn && defInf.frm == frm)
-                    return defInf;
-                waveview = defInf;
-            }
-            Waveview defInf1 = new Waveview(chn)
-            {
-                pID = ++this.pID
-            };
-            if (this.wQueue == null)
-                this.wQueue = defInf1;
-            if (waveview != null)
-                waveview.wLink = defInf1;
-            defInf1.frm = frm;
-            return defInf1;
-        }
+        private MferFile GetMferFileInstance => this.mferFile ??= new();
 
 
         private int TLVanz(int mode, int ch, int point, int dtLen, byte[] bf)
         {
-            Waveview waveview = null;
+            MferFile mferFile = null;
             while (dtLen > point)
             {
-                Console.WriteLine("Point: " + point);
                 try
                 {
-                    if (waveview == null)
+                    if (mferFile == null)
                     {
-                        waveview = this.GetDefInf(ch, this.frm);
-                        if (this.frm > 0)
-                        {
-                            for (int chn = 0; chn <= waveview.channel; ++chn)
-                            {
-                                Waveview defInf1 = this.GetDefInf(chn, this.frm - 1);
-                                Waveview defInf2 = this.GetDefInf(chn, this.frm);
-                                defInf2.chn = chn;
-                                defInf2.frm = this.frm;
-                                defInf2.block = defInf1.block;
-                                defInf2.channel = defInf1.channel;
-                                defInf2.resolution = defInf1.resolution;
-                                defInf2.sampling = defInf1.sampling;
-                                defInf2.sequence = defInf1.sequence;
-                                defInf2.wave = null;
-                            }
-                        }
+                        mferFile = GetMferFileInstance;
                     }
-                    bool flag = true;
                     if (bf[point] == MFERdef.MWF_END)
                         return 0;
                     int num1;
@@ -174,31 +141,17 @@
                             // MWF_BLK
                             case 4:
                                 this.GetData32(out dt, len, point + num1, bf);
-                                waveview.block = dt;
-                                if (ch == 0)
-                                {
-                                    for (int chn = 1; chn <= waveview.channel; ++chn)
-                                        this.GetDefInf(chn, this.frm).block = waveview.block;
-                                    break;
-                                }
+                                mferFile.Block = dt;
                                 break;
                             //MWF_CHN
                             case 5:
                                 this.GetData32(out dt, len, point + num1, bf);
-                                waveview.channel = dt;
-                                this.SetChannel(dt);
+                                mferFile.Channel = dt;
                                 break;
                             //MWF_SEQ
                             case 6:
-
                                 this.GetData32(out dt, len, point + num1, bf);
-                                waveview.sequence = dt;
-                                if (ch == 0)
-                                {
-                                    for (int chn = 1; chn <= waveview.channel; ++chn)
-                                        this.GetDefInf(chn, this.frm).sequence = waveview.sequence;
-                                    break;
-                                }
+                                mferFile.Sequence = dt;
                                 break;
                             // MWF_WFM
                             case 8:
@@ -213,17 +166,12 @@
                                 //int index2 = 0;
                                 //while (index2 < MFERdef.ECGleadCode.Length && MFERdef.ECGleadCode[index2] != dt)
                                 //    ++index2;
-                                waveview.wave_lead = dt;
+                                mferFile.wave_lead = dt;
                                 break;
                             // MWF_DTP
                             case 10:
                                 this.GetData16(out dt, len, point + num1, bf);
-                                waveview.dType = dt;
-                                if (ch == 0)
-                                {
-                                    for (int chn = 1; chn <= waveview.channel; ++chn)
-                                        this.GetDefInf(chn, this.frm).sequence = dt;
-                                }
+                                mferFile.DType = dt;
                                 //int index3 = 0;
                                 //while (index3 < MFERdef.dTypeCode.Length && MFERdef.dTypeCode[index3] != dt)
                                 //    ++index3;
@@ -237,20 +185,14 @@
                                     double num7 = (double)dt * Math.Pow(10.0, (double)y);
                                     double num8;
                                     if (bf[point + num1] == (byte)0)
-                                        waveview.sampling = 1.0 / num7;
+                                        mferFile.Sampling = 1.0 / num7;
                                     else if (bf[point + num1] == (byte)1)
                                     {
-                                        waveview.sampling = num7;
+                                        mferFile.Sampling = 1.0 / num7;
                                         num8 = num7 * 1000.0;
                                     }
                                     else
                                         num8 = bf[point + num1] != (byte)2 ? 0.0 : num7 * 1000.0;
-                                    if (ch == 0)
-                                    {
-                                        for (int chn = 1; chn <= waveview.channel; ++chn)
-                                            this.GetDefInf(chn, this.frm).sampling = waveview.sampling;
-                                        break;
-                                    }
                                     break;
                                 }
                                 break;
@@ -278,13 +220,7 @@
                                         case 10:
                                         case 11:
                                         case 12:
-                                            waveview.resolution = num9;
-                                            if (ch == 0)
-                                            {
-                                                for (int chn = 1; chn <= waveview.channel; ++chn)
-                                                    this.GetDefInf(chn, this.frm).resolution = waveview.resolution;
-                                                break;
-                                            }
+                                            mferFile.Resolution = num9;
                                             break;
                                         default:
                                             num9 = 0.0;
@@ -299,13 +235,7 @@
                                 this.GetData16(out dt, len, point + num1, bf);
                                 if (dt != 0 && dt == 1)
                                 {
-                                    waveview.dType = 9;
-                                    if (ch == 0)
-                                    {
-                                        for (int chn = 1; chn <= waveview.channel; ++chn)
-                                            this.GetDefInf(chn, this.frm).dType = 9;
-                                        break;
-                                    }
+                                    mferFile.DType = 9;
                                     break;
                                 }
                                 break;
@@ -316,7 +246,7 @@
                             // MWF_NUL
                             case 18:
                                 this.GetData32(out dt, len, point + num1, bf);
-                                waveview.nil = dt;
+                                mferFile.Nil = dt;
                                 break;
                             case 19:
                             case 65:
@@ -324,48 +254,49 @@
                             // MWF_WAV
                             case 30:
                                 int num11 = 1;
-                                var defInf0 = this.GetDefInf(0, this.frm);
-                                if (defInf0.dType != 9)
+                                var defInf0 = GetMferFileInstance;
+                                if (defInf0.DType != 9)
                                     num11 = 2;
-                                int num12 = defInf0.sequence * defInf0.block / defInf0.channel;
-                                if (num12 < len / defInf0.channel / num11)
-                                    num12 = len / defInf0.channel / num11;
-                                if (defInf0.block == 1 && defInf0.sequence == 1)
-                                    defInf0.sequence = num12;
-                                for (int chn = 1; chn <= defInf0.channel; ++chn)
+                                int num12 = defInf0.Sequence * defInf0.Block / defInf0.Channel;
+                                if (num12 < len / defInf0.Channel / num11)
+                                    num12 = len / defInf0.Channel / num11;
+                                if (defInf0.Block == 1 && defInf0.Sequence == 1)
+                                    defInf0.Sequence = num12;
+                                for (int chn = 1; chn <= defInf0.Channel; ++chn)
                                 {
-                                    Waveview defInfChn = this.GetDefInf(chn, this.frm);
-                                    if (defInfChn.block == 1 && defInfChn.sequence == 1)
-                                        defInfChn.sequence = num12;
-                                    defInfChn.wave = new short[defInfChn.block * defInfChn.sequence];
+                                    var defInfChn = GetMferFileInstance;
+                                    if (defInfChn.Block == 1 && defInfChn.Sequence == 1)
+                                        defInfChn.Sequence = num12;
+                                    defInfChn.SetWave(chn, this.frm, new short[defInfChn.Block * defInfChn.Sequence]);
                                     defInfChn.pData = 0;
                                 }
                                 int num13 = 0;
-                                int sequence = defInf0.sequence;
+                                int sequence = defInf0.Sequence;
                                 for (int index4 = 0; index4 < sequence; ++index4)
                                 {
-                                    int channel = defInf0.channel;
+                                    int channel = defInf0.Channel;
                                     for (int chn = 1; chn <= channel; ++chn)
                                     {
-                                        Waveview defInfChn = this.GetDefInf(chn, this.frm);
-                                        for (int index5 = 0; index5 < defInfChn.block; ++index5)
+                                        var defInfChn = this.GetMferFileInstance;
+
+                                        for (int index5 = 0; index5 < defInfChn.Block; ++index5)
                                         {
                                             if (len > num13 + num1 && point + num1 + num13 < dtLen)
                                             {
-                                                if (defInfChn.dType == 9)
+                                                if (defInfChn.DType == 9)
                                                 {
                                                     dt = (int)bf[point + num1 + num13];
                                                     if (dt >= 128)
                                                         dt -= 256;
                                                     defInfChn.pData += dt;
                                                     ++num13;
-                                                    defInfChn.wave[index4 * defInfChn.block + index5] = (short)defInfChn.pData;
+                                                    defInfChn.GetWave(chn, this.frm)[index4 * defInfChn.Block + index5] = (short)defInfChn.pData;
                                                 }
                                                 else
                                                 {
                                                     this.GetData16(out dt, 2, point + num1 + num13, bf);
                                                     num13 += 2;
-                                                    defInfChn.wave[index4 * defInfChn.block + index5] = (short)dt;
+                                                    defInfChn.GetWave(chn, this.frm)[index4 * defInfChn.Block + index5] = (short)dt;
                                                 }
                                             }
                                             else
@@ -377,7 +308,7 @@
                                 if (ch == 0)
                                     ++this.frm;
                                 int num14 = len / num11;
-                                waveview = null;
+                                mferFile = null;
                                 break;
                             // MWF_ATT
                             case 63:
@@ -414,7 +345,7 @@
                                     text69 = text69 + bf[point + num1 + 8].ToString() + ":";
                                 if (len >= 10)
                                     text69 += bf[point + num1 + 9].ToString();
-                                Console.WriteLine(text69);
+                                mferFile.MeasurementTime = text69;
                                 break;
                         }
                     }
@@ -546,20 +477,6 @@
                     dt = dt * 256 + (int)bf[pt + index];
             }
             return len > 4 ? -1 : 0;
-        }
-
-        public void SetChannel(int chn)
-        {
-            Waveview defInf1 = this.GetDefInf(0, this.frm);
-            for (int chn1 = 1; chn1 <= chn; ++chn1)
-            {
-                Waveview defInf2 = this.GetDefInf(chn1, this.frm);
-                defInf2.block = defInf1.block;
-                defInf2.channel = defInf1.channel;
-                defInf2.resolution = defInf1.resolution;
-                defInf2.sampling = defInf1.sampling;
-                defInf2.sequence = defInf1.sequence;
-            }
         }
     }
 }
