@@ -16,12 +16,12 @@ MFERParser is a parser library that allows you to parse MFER (My File Extension 
 ## Installation
 
 To use MFERParser in your project, you can install it via NuGet. Run the following command in the Package Manager Console:
-```ter
-Install-Package MFERParser
+```Console
+Install-Package danghieuthang.mferparser
 ```
 Or via the .NET Core command line interface:
 ```Console
-Install-Package MFERParser
+dotnet add package danghieuthang.mferparser
 ```
 Alternatively, you can manually download the library from the [GitHub repository](https://github.com/danghieuthang/mfer-parser) and reference it in your project.
 
