@@ -1,7 +1,7 @@
 ﻿using MFERParser;
 using System.Diagnostics;
 
-string filePath = @"C:\Users\Dang Thang\Downloads\Holter2.mwf";
+string filePath = @"C:\Users\Dang Thang\Downloads\Holter.mwf";
 
 MferParser parser = new MferParser();
 

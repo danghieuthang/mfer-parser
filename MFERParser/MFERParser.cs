@@ -3,12 +3,64 @@
     public class MferFile
     {
         public string MeasurementTime { get; set; }
+        /// <summary>
+        /// Data format version
+        /// </summary>
+        public string Version { get; internal set; }
+        public int DataPointer { get; internal set; }
+        public int WaveformIdentifier { get; internal set; }
+        public int WaveformName { get; internal set; }
+        public string ECGLeadName { get; internal set; }
+        public string Filter { get; internal set; }
+        public string Comment { get; internal set; }
+        public string Manufacturer { get; internal set; }
+        public string PatientName { get; internal set; }
+        public string Preamble { get; internal set; }
+        public string PersonName { get; internal set; }
+        public string PersonID { get; internal set; }
+        public string Age { get; internal set; }
+        public string Sex { get; internal set; }
+        public string Message { get; internal set; }
+
+        /// <summary>
+        /// Channel number
+        /// </summary>
         public int Channel;
+
         public int WaveLead;
+
+        /// <summary>
+        /// Data block length
+        /// </summary>
         public int Block;
+
+        /// <summary>
+        /// Sequence number
+        /// </summary>
         public int Sequence;
+
+        /// <summary>
+        /// The sampling
+        /// </summary>
         public double Sampling;
+        /// <summary>
+        /// Sampling frequency in Hz
+        /// </summary>
+        public double SamplingFrequency;
+        /// <summary>
+        /// Sampling interval in ms
+        /// </summary>
+        public double SamplingInterval;
+
+        /// <summary>
+        /// The resolution of the data
+        /// </summary>
         public double Resolution;
+
+        /// <summary>
+        /// The resulution type
+        /// </summary>
+        public string ResolutionType;
         public int DType;
         public int Offset;
         public int Nil;
@@ -36,8 +88,14 @@
             Waves[(chn, frm)] = wave;
         }
     }
+
+
+
     public class MferParser
     {
+        /// <summary>
+        /// Determines the endianess of the data, <c>false</c> for big endian and <c>true</c> for little endian
+        /// </summary>
         private bool endian;
         private int frm;
         private byte[] bf;
@@ -106,7 +164,13 @@
                         {
                             int num4 = len & (int)sbyte.MaxValue;
                             if (num4 > 4)
+                            {
+#if DEBUG
+
+                                Console.WriteLine($"Data length[{num4}] error");
+#endif
                                 return -1;
+                            }
                             len = 0;
                             for (int index = 1; index <= num4; ++index)
                             {
@@ -122,21 +186,29 @@
                         {
                             // MWF_BLE
                             case 1:
+                                // Big/Little endian
                                 if (len < 2)
                                 {
                                     this.GetData(out dt, point, bf);
                                     switch (dt)
                                     {
                                         case 0:
+                                            // Big endian
                                             this.endian = false;
                                             break;
                                         case 1:
+                                            // Little endian
                                             this.endian = true;
                                             break;
                                     }
                                 }
                                 else
+                                {
                                     break;
+                                }
+                                break;
+                            case 2:
+                                mferFile.Version = bf[point + num1].ToString() + "." + bf[point + num1 + 1].ToString() + "." + bf[point + num1 + 2].ToString();
                                 break;
                             // MWF_BLK
                             case 4:
@@ -153,20 +225,61 @@
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Sequence = dt;
                                 break;
+                            case 7:
+                                this.GetData32(out dt, len, point + num1, bf);
+                                mferFile.DataPointer = dt;
+                                break;
                             // MWF_WFM
                             case 8:
-                                //this.GetData16(out dt, len, point + num1, bf);
-                                //int index1 = 0;
-                                //while (index1 < MFERdef.WaveformCode.Length && MFERdef.WaveformCode[index1] != dt)
-                                //    ++index1;
+                                // Waveform identifier
+                                this.GetData16(out dt, len, point + num1, bf);
+                                mferFile.WaveformIdentifier = dt;
+                                string waveformName = len.ToString();
+                                int i;
+                                for (i = 0; i < MFERdef.WaveformCode.Length; ++i)
+                                {
+                                    if (MFERdef.WaveformCode[i] == dt)
+                                    {
+                                        waveformName = MFERdef.WaveformName[i];
+                                        break;
+                                    }
+                                }
+                                if (i >= MFERdef.WaveformCode.Length)
+                                {
+                                    waveformName = "Undefined waveform(" + dt.ToString() + ")";
+                                }
+                                if (len > 2)
+                                {
+                                    string str = waveformName + "[";
+                                    for (int index2 = 2; index2 < len; ++index2)
+                                        str += (char)bf[point + num3 + index2];
+                                    waveformName = str + "]";
+                                }
+                                mferFile.WaveformName = dt;
                                 break;
                             // MWF_LDN
                             case 9:
                                 this.GetData16(out dt, len, point + num1, bf);
-                                //int index2 = 0;
-                                //while (index2 < MFERdef.ECGleadCode.Length && MFERdef.ECGleadCode[index2] != dt)
-                                //    ++index2;
                                 mferFile.WaveLead = dt;
+                                string ecgLeadName = len.ToString();
+                                for (i = 0; i < MFERdef.ECGleadCode.Length; ++i)
+                                {
+                                    if (MFERdef.ECGleadCode[i] == dt)
+                                    {
+                                        ecgLeadName = "Lead " + MFERdef.ECGleadName[i];
+                                        break;
+                                    }
+                                }
+                                if (i >= MFERdef.ECGleadCode.Length)
+                                    ecgLeadName = "Undefine code(" + dt.ToString() + ")";
+                                if (len > 2)
+                                {
+                                    string str = ecgLeadName + "[";
+                                    for (int index4 = 2; index4 < len; ++index4)
+                                        str += (char)bf[point + num3 + index4];
+                                    ecgLeadName = str + "]";
+                                }
+                                mferFile.ECGLeadName = ecgLeadName;
                                 break;
                             // MWF_DTP
                             case 10:
@@ -184,15 +297,25 @@
                                     this.GetData32(out dt, len - 2, point + num1 + 2, bf);
                                     double num7 = (double)dt * Math.Pow(10.0, (double)y);
                                     double num8;
-                                    if (bf[point + num1] == (byte)0)
+                                    if (bf[point + num1] == 0)
+                                    {
                                         mferFile.Sampling = 1.0 / num7;
+                                        mferFile.SamplingFrequency = num7;
+                                    }
                                     else if (bf[point + num1] == (byte)1)
                                     {
                                         mferFile.Sampling = 1.0 / num7;
                                         num8 = num7 * 1000.0;
+                                        mferFile.SamplingInterval = num8;
+                                    }
+                                    else if (bf[point + num1] == 2)
+                                    {
+                                        num8 = num7 * 1000.0;
                                     }
                                     else
-                                        num8 = bf[point + num1] != (byte)2 ? 0.0 : num7 * 1000.0;
+                                    {
+                                        num8 = 0.0;
+                                    }
                                     break;
                                 }
                                 break;
@@ -221,6 +344,7 @@
                                         case 11:
                                         case 12:
                                             mferFile.Resolution = num9;
+                                            mferFile.ResolutionType = MFERdef.ResolutionType[bf[point + num1]];
                                             break;
                                         default:
                                             num9 = 0.0;
@@ -230,26 +354,63 @@
                                 else
                                     break;
                                 break;
+                            case 13:
+                                this.GetData32(out dt, len, point + num1, bf);
+                                mferFile.Offset = dt;
+                                break;
                             // MWF_CMP
                             case 14:
                                 this.GetData16(out dt, len, point + num1, bf);
-                                if (dt != 0 && dt == 1)
+                                switch (dt)
                                 {
-                                    mferFile.DType = 9;
-                                    break;
+                                    case 0:
+#if DEBUG
+                                        Console.WriteLine("No compression");
+#endif
+                                        break;
+                                    case 1:
+                                        mferFile.DType = 9;
+                                        break;
+
                                 }
                                 break;
                             // MWF_FLT
                             case 17:
-                                int num10 = len;
+                                // filter
+                                string filter = "";
+                                for (i = 0; i < len; ++i)
+                                    filter += (char)bf[point + num1 + i];
+                                mferFile.Filter = filter;
                                 break;
                             // MWF_NUL
                             case 18:
+                                // Null value
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Nil = dt;
                                 break;
                             case 19:
                             case 65:
+                                break;
+                            case 22:
+                                // comment
+                                string comment = "";
+                                for (i = 0; i < len; ++i)
+                                    comment += (char)bf[point + num1 + i];
+                                mferFile.Comment = comment;
+                                break;
+                            case 23:
+                                // Manufacturer
+                                string manufacturer = "";
+                                for (i = 0; i < len; ++i)
+                                    manufacturer += (char)bf[point + num1 + i];
+                                mferFile.Manufacturer = manufacturer;
+                                break;
+                            case 26:
+                                // Patient Name(old)
+                                string patientName = "";
+                                for (i = 0; i < len; ++i)
+                                    patientName += (char)bf[point + num1 + i];
+                                mferFile.PatientName = patientName;
                                 break;
                             // MWF_WAV
                             case 30:
@@ -312,15 +473,84 @@
                                 break;
                             // MWF_ATT
                             case 63:
+#if DEBUG
+                                Console.WriteLine("Channel(" + bf[point + 1].ToString() + ") attribute");
+#endif
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
+                                break;
+                            case 64:
+                                //Preamble
+                                string preamble = "";
+                                for (i = 0; i < num1 + len; ++i)
+                                    preamble += (char)bf[point + i];
+                                mferFile.Preamble = preamble;
                                 break;
                             // MWF_SET
                             case 103:
+                                // Group
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
                                 break;
                             // MWF_END
                             case 128:
+                                // End of format
                                 return 0;
+                            case 129:
+                                //Person Name
+                                string personName = "";
+                                for (i = 0; i < len; ++i)
+                                    personName += (char)bf[point + num1 + i];
+                                mferFile.PersonName = personName;
+                                break;
+                            case 130:
+                                //Person Id
+                                string personID = "";
+                                for (i = 0; i < len; ++i)
+                                    personID += (char)bf[point + num1 + i];
+                                mferFile.PersonID = personID;
+                                break;
+
+                            case 131:
+                                //Age
+                                string age = "";
+                                if (len >= 1)
+                                    age = age + bf[point + num1].ToString() + "(Years)";
+                                if (len >= 2)
+                                {
+                                    this.GetData16(out dt, 2, point + num1 + 1, bf);
+                                    age = age + " " + dt.ToString() + "(Month)";
+                                }
+                                if (len >= 4)
+                                {
+                                    this.GetData16(out dt, 2, point + num1 + 3, bf);
+                                    age = age + dt.ToString() + "/";
+                                }
+                                if (len >= 6)
+                                    age = age + bf[point + num1 + 5].ToString() + "/";
+                                if (len >= 7)
+                                    age += bf[point + num1 + 6].ToString();
+
+                                mferFile.Age = age;
+                                break;
+                            case 132:
+                                // Sex
+                                string sex = "";
+                                switch (bf[point + num1])
+                                {
+                                    case 0:
+                                        sex = "Undefined";
+                                        break;
+                                    case 1:
+                                        sex = "Male";
+                                        break;
+                                    case 2:
+                                        sex = "Female";
+                                        break;
+                                    case 3:
+                                        sex = "Unclassified";
+                                        break;
+                                }
+                                mferFile.Sex = sex;
+                                break;
                             // MWF_TIM
                             case 133:
                                 string text69 = "";
@@ -346,6 +576,13 @@
                                 if (len >= 10)
                                     text69 += bf[point + num1 + 9].ToString();
                                 mferFile.MeasurementTime = text69;
+                                break;
+                            case 134:
+                                // message
+                                string message = "";
+                                for (i = 0; i < len; ++i)
+                                    message += (char)bf[point + num3 + i];
+                                mferFile.Message = message;
                                 break;
                         }
                     }

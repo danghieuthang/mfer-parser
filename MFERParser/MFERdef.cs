@@ -179,5 +179,22 @@
           "64 bits double-precision floating(IEEE754)",
           "8 bits AHA differential"
         };
+
+        public static string[] ResolutionType = new string[13]
+        {
+          "μV",
+          "mmHg",
+          "Pa",
+          "cmH2O",
+          "mmHg/s",
+          "dyne",
+          "N",
+          "%",
+          "C",
+          "/m",
+          "/s",
+          "ohm",
+          "A",
+        };
     }
 }
