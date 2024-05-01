@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MFERParser", "MFERParser\MFERParser.csproj", "{439AB48E-47FF-4FD0-83B0-EE4C4542E2D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MFERParser", "src\MFERParser\MFERParser.csproj", "{78E46E9B-69F0-44AE-ADAF-6258B95B1128}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{00594742-9943-49EC-B5E0-6280D406A826}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C958C78D-2336-4E78-AEF3-5845CC78508B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MFERParser.Tests", "test\MFERParser.Tests\MFERParser.Tests.csproj", "{24D06011-C95C-47FD-BA77-9814523A7EFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MFERParser.Benchmarks", "test\MFERParser.Benchmarks\MFERParser.Benchmarks.csproj", "{EFD5BD9A-5A59-45A0-B781-E0409DDE442A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,13 +19,26 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{439AB48E-47FF-4FD0-83B0-EE4C4542E2D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{439AB48E-47FF-4FD0-83B0-EE4C4542E2D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{439AB48E-47FF-4FD0-83B0-EE4C4542E2D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{439AB48E-47FF-4FD0-83B0-EE4C4542E2D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78E46E9B-69F0-44AE-ADAF-6258B95B1128}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78E46E9B-69F0-44AE-ADAF-6258B95B1128}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78E46E9B-69F0-44AE-ADAF-6258B95B1128}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78E46E9B-69F0-44AE-ADAF-6258B95B1128}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24D06011-C95C-47FD-BA77-9814523A7EFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24D06011-C95C-47FD-BA77-9814523A7EFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24D06011-C95C-47FD-BA77-9814523A7EFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24D06011-C95C-47FD-BA77-9814523A7EFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFD5BD9A-5A59-45A0-B781-E0409DDE442A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFD5BD9A-5A59-45A0-B781-E0409DDE442A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFD5BD9A-5A59-45A0-B781-E0409DDE442A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFD5BD9A-5A59-45A0-B781-E0409DDE442A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{78E46E9B-69F0-44AE-ADAF-6258B95B1128} = {00594742-9943-49EC-B5E0-6280D406A826}
+		{24D06011-C95C-47FD-BA77-9814523A7EFB} = {C958C78D-2336-4E78-AEF3-5845CC78508B}
+		{EFD5BD9A-5A59-45A0-B781-E0409DDE442A} = {C958C78D-2336-4E78-AEF3-5845CC78508B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {51B6E70A-DF96-4091-9082-968426126B4D}

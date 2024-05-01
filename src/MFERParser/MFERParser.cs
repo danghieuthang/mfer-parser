@@ -89,8 +89,9 @@
         }
     }
 
-
-
+    /// <summary>
+    /// Defines the MFER file format parser
+    /// </summary>
     public class MferParser
     {
         /// <summary>
@@ -104,8 +105,13 @@
         public MferParser()
         {
         }
+
         public MferFile Parse(string filePath)
         {
+            if (File.Exists(filePath) == false)
+            {
+                return null;
+            }
             using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             long length = fileStream.Length;
             this.bf = new byte[length];
@@ -699,7 +705,7 @@
             return 0;
         }
 
-        public int GetData16(out int dt, int len, int pt, byte[] bf)
+        private int GetData16(out int dt, int len, int pt, byte[] bf)
         {
             int num1 = 2;
             if (num1 > len)
@@ -724,7 +730,7 @@
             return len > 2 ? -1 : 0;
         }
 
-        public int GetData32(out int dt, int len, int pt, byte[] bf)
+        private int GetData32(out int dt, int len, int pt, byte[] bf)
         {
             int num1 = 4;
             if (num1 > len)

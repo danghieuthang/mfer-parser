@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+
+		<PackageId>danghieuthang.mferparser</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Thang Dang</Authors>
+		<Company></Company>
+		<PackageTags>MFER,Parser</PackageTags>
+		<Description>This package will help in parser mfer file.</Description>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+</Project>
