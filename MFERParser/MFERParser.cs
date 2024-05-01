@@ -58,7 +58,7 @@
         public double Resolution;
 
         /// <summary>
-        /// The resulution type
+        /// The resolution type
         /// </summary>
         public string ResolutionType;
         public int DType;
@@ -166,8 +166,9 @@
                             if (num4 > 4)
                             {
 #if DEBUG
-
+                                Console.ForegroundColor = ConsoleColor.Red;
                                 Console.WriteLine($"Data length[{num4}] error");
+                                Console.ResetColor();
 #endif
                                 return -1;
                             }
@@ -200,10 +201,22 @@
                                             // Little endian
                                             this.endian = true;
                                             break;
+                                        default:
+#if DEBUG
+                                            Console.ForegroundColor = ConsoleColor.Red;
+                                            Console.WriteLine($"Data error");
+                                            Console.ResetColor();
+#endif
+                                            break;
                                     }
                                 }
                                 else
                                 {
+#if DEBUG
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.WriteLine($"Data length error");
+                                    Console.ResetColor();
+#endif
                                     break;
                                 }
                                 break;
@@ -315,8 +328,21 @@
                                     else
                                     {
                                         num8 = 0.0;
+#if DEBUG
+                                        Console.ForegroundColor = ConsoleColor.Red;
+                                        Console.WriteLine($"Definition definition error");
+                                        Console.ResetColor();
+#endif
                                     }
                                     break;
+                                }
+                                else
+                                {
+#if DEBUG
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.WriteLine($"Data length  error");
+                                    Console.ResetColor();
+#endif
                                 }
                                 break;
                             // MWF_SEN
@@ -348,7 +374,12 @@
                                             break;
                                         default:
                                             num9 = 0.0;
-                                            goto case 1;
+#if DEBUG
+                                            Console.ForegroundColor = ConsoleColor.Red;
+                                            Console.WriteLine($"Definition definition error");
+                                            Console.ResetColor();
+#endif
+                                            break;
                                     }
                                 }
                                 else
@@ -474,7 +505,9 @@
                             // MWF_ATT
                             case 63:
 #if DEBUG
+                                Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("Channel(" + bf[point + 1].ToString() + ") attribute");
+                                Console.ResetColor();
 #endif
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
                                 break;
