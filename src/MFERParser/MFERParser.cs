@@ -1,94 +1,7 @@
-﻿namespace MFERParser
+﻿using System.Text;
+
+namespace MFERParser
 {
-    public class MferFile
-    {
-        public string MeasurementTime { get; set; }
-        /// <summary>
-        /// Data format version
-        /// </summary>
-        public string Version { get; internal set; }
-        public int DataPointer { get; internal set; }
-        public int WaveformIdentifier { get; internal set; }
-        public int WaveformName { get; internal set; }
-        public string ECGLeadName { get; internal set; }
-        public string Filter { get; internal set; }
-        public string Comment { get; internal set; }
-        public string Manufacturer { get; internal set; }
-        public string PatientName { get; internal set; }
-        public string Preamble { get; internal set; }
-        public string PersonName { get; internal set; }
-        public string PersonID { get; internal set; }
-        public string Age { get; internal set; }
-        public string Sex { get; internal set; }
-        public string Message { get; internal set; }
-
-        /// <summary>
-        /// Channel number
-        /// </summary>
-        public int Channel;
-
-        public int WaveLead;
-
-        /// <summary>
-        /// Data block length
-        /// </summary>
-        public int Block;
-
-        /// <summary>
-        /// Sequence number
-        /// </summary>
-        public int Sequence;
-
-        /// <summary>
-        /// The sampling
-        /// </summary>
-        public double Sampling;
-        /// <summary>
-        /// Sampling frequency in Hz
-        /// </summary>
-        public double SamplingFrequency;
-        /// <summary>
-        /// Sampling interval in ms
-        /// </summary>
-        public double SamplingInterval;
-
-        /// <summary>
-        /// The resolution of the data
-        /// </summary>
-        public double Resolution;
-
-        /// <summary>
-        /// The resolution type
-        /// </summary>
-        public string ResolutionType;
-        public int DType;
-        public int Offset;
-        public int Nil;
-        public int pID;
-        public int pData;
-        public Dictionary<(int, int), short[]> Waves;
-        public MferFile()
-        {
-            Waves = new Dictionary<(int, int), short[]>();
-        }
-
-        /// <summary>
-        /// Get the wave data for a specific channel and frame
-        /// </summary>
-        /// <param name="chn">The channel</param>
-        /// <param name="frm">The frame</param>
-        /// <returns></returns>
-        public short[] GetWave(int chn, int frm)
-        {
-            return Waves[(chn, frm)];
-        }
-
-        public void SetWave(int chn, int frm, short[] wave)
-        {
-            Waves[(chn, frm)] = wave;
-        }
-    }
-
     /// <summary>
     /// Defines the MFER file format parser
     /// </summary>
@@ -192,7 +105,7 @@
                         switch (bf[point])
                         {
                             // MWF_BLE
-                            case 1:
+                            case MFERdef.MWF_BLE:
                                 // Big/Little endian
                                 if (len < 2)
                                 {
@@ -226,30 +139,30 @@
                                     break;
                                 }
                                 break;
-                            case 2:
+                            case MFERdef.MWF_VER:
                                 mferFile.Version = bf[point + num1].ToString() + "." + bf[point + num1 + 1].ToString() + "." + bf[point + num1 + 2].ToString();
                                 break;
                             // MWF_BLK
-                            case 4:
+                            case MFERdef.MWF_BLK:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Block = dt;
                                 break;
                             //MWF_CHN
-                            case 5:
+                            case MFERdef.MWF_CHN:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Channel = dt;
                                 break;
                             //MWF_SEQ
-                            case 6:
+                            case MFERdef.MWF_SEQ:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Sequence = dt;
                                 break;
-                            case 7:
+                            case MFERdef.MWF_PNT:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.DataPointer = dt;
                                 break;
                             // MWF_WFM
-                            case 8:
+                            case MFERdef.MWF_WFM:
                                 // Waveform identifier
                                 this.GetData16(out dt, len, point + num1, bf);
                                 mferFile.WaveformIdentifier = dt;
@@ -277,7 +190,7 @@
                                 mferFile.WaveformName = dt;
                                 break;
                             // MWF_LDN
-                            case 9:
+                            case MFERdef.MWF_LDN:
                                 this.GetData16(out dt, len, point + num1, bf);
                                 mferFile.WaveLead = dt;
                                 string ecgLeadName = len.ToString();
@@ -301,7 +214,7 @@
                                 mferFile.ECGLeadName = ecgLeadName;
                                 break;
                             // MWF_DTP
-                            case 10:
+                            case MFERdef.MWF_DTP:
                                 this.GetData16(out dt, len, point + num1, bf);
                                 mferFile.DType = dt;
                                 //int index3 = 0;
@@ -309,7 +222,7 @@
                                 //    ++index3;
                                 break;
                             // MWF_IVL
-                            case 11:
+                            case MFERdef.MWF_IVL:
                                 if (len <= 6 && len >= 3)
                                 {
                                     sbyte y = (sbyte)bf[point + num1 + 1];
@@ -352,51 +265,41 @@
                                 }
                                 break;
                             // MWF_SEN
-                            case 12:
+                            case MFERdef.MWF_SEN:
                                 if (len <= 6 && len >= 3)
                                 {
                                     sbyte y = (sbyte)bf[point + num1 + 1];
                                     this.GetData32(out dt, len - 2, point + num1 + 2, bf);
                                     double num9 = (double)dt * Math.Pow(10.0, (double)y);
-                                    switch (bf[point + num1])
+                                    if (bf[point + num1] == 0)
                                     {
-                                        case 0:
-                                            num9 *= 1000000.0;
-                                            goto case 1;
-                                        case 1:
-                                        case 2:
-                                        case 3:
-                                        case 4:
-                                        case 5:
-                                        case 6:
-                                        case 7:
-                                        case 8:
-                                        case 9:
-                                        case 10:
-                                        case 11:
-                                        case 12:
-                                            mferFile.Resolution = num9;
-                                            mferFile.ResolutionType = MFERdef.ResolutionType[bf[point + num1]];
-                                            break;
-                                        default:
-                                            num9 = 0.0;
+                                        num9 *= 1000000.0;
+                                    }
+                                    if (bf[point + num1] <= 12)
+                                    {
+                                        mferFile.Resolution = num9;
+                                        mferFile.ResolutionType = MFERdef.ResolutionType[bf[point + num1]];
+                                    }
+                                    else
+                                    {
+                                        num9 = 0.0;
 #if DEBUG
-                                            Console.ForegroundColor = ConsoleColor.Red;
-                                            Console.WriteLine($"Definition definition error");
-                                            Console.ResetColor();
+                                        Console.ForegroundColor = ConsoleColor.Red;
+                                        Console.WriteLine($"Definition definition error");
+                                        Console.ResetColor();
 #endif
-                                            break;
                                     }
                                 }
+
                                 else
                                     break;
                                 break;
-                            case 13:
+                            case MFERdef.MWF_OFF:
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Offset = dt;
                                 break;
                             // MWF_CMP
-                            case 14:
+                            case MFERdef.MWF_CMP:
                                 this.GetData16(out dt, len, point + num1, bf);
                                 switch (dt)
                                 {
@@ -412,7 +315,7 @@
                                 }
                                 break;
                             // MWF_FLT
-                            case 17:
+                            case MFERdef.MWF_FLT:
                                 // filter
                                 string filter = "";
                                 for (i = 0; i < len; ++i)
@@ -420,29 +323,29 @@
                                 mferFile.Filter = filter;
                                 break;
                             // MWF_NUL
-                            case 18:
+                            case MFERdef.MWF_NUL:
                                 // Null value
                                 this.GetData32(out dt, len, point + num1, bf);
                                 mferFile.Nil = dt;
                                 break;
-                            case 19:
-                            case 65:
+                            case MFERdef.MWF_EVT_L1:
+                            case MFERdef.MWF_EVT:
                                 break;
-                            case 22:
+                            case MFERdef.MWF_NTE:
                                 // comment
                                 string comment = "";
                                 for (i = 0; i < len; ++i)
                                     comment += (char)bf[point + num1 + i];
                                 mferFile.Comment = comment;
                                 break;
-                            case 23:
+                            case MFERdef.MWF_MAN:
                                 // Manufacturer
                                 string manufacturer = "";
                                 for (i = 0; i < len; ++i)
                                     manufacturer += (char)bf[point + num1 + i];
                                 mferFile.Manufacturer = manufacturer;
                                 break;
-                            case 26:
+                            case MFERdef.MWF_PNM_L1:
                                 // Patient Name(old)
                                 string patientName = "";
                                 for (i = 0; i < len; ++i)
@@ -450,7 +353,7 @@
                                 mferFile.PatientName = patientName;
                                 break;
                             // MWF_WAV
-                            case 30:
+                            case MFERdef.MWF_WAV:
                                 int num11 = 1;
                                 var defInf0 = GetMferFileInstance;
                                 if (defInf0.DType != 9)
@@ -509,7 +412,7 @@
                                 mferFile = null;
                                 break;
                             // MWF_ATT
-                            case 63:
+                            case MFERdef.MWF_ATT:
 #if DEBUG
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("Channel(" + bf[point + 1].ToString() + ") attribute");
@@ -517,7 +420,7 @@
 #endif
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
                                 break;
-                            case 64:
+                            case MFERdef.MWF_PRE:
                                 //Preamble
                                 string preamble = "";
                                 for (i = 0; i < num1 + len; ++i)
@@ -525,22 +428,22 @@
                                 mferFile.Preamble = preamble;
                                 break;
                             // MWF_SET
-                            case 103:
+                            case MFERdef.MWF_SET:
                                 // Group
                                 this.TLVanz(mode + 1, (int)bf[point + 1] + 1, point + num1, point + num1 + len, bf);
                                 break;
                             // MWF_END
-                            case 128:
+                            case MFERdef.MWF_END:
                                 // End of format
                                 return 0;
-                            case 129:
+                            case MFERdef.MWF_PNM:
                                 //Person Name
                                 string personName = "";
                                 for (i = 0; i < len; ++i)
                                     personName += (char)bf[point + num1 + i];
                                 mferFile.PersonName = personName;
                                 break;
-                            case 130:
+                            case MFERdef.MWF_PID:
                                 //Person Id
                                 string personID = "";
                                 for (i = 0; i < len; ++i)
@@ -548,29 +451,29 @@
                                 mferFile.PersonID = personID;
                                 break;
 
-                            case 131:
+                            case MFERdef.MWF_AGE:
                                 //Age
-                                string age = "";
+                                StringBuilder age = new StringBuilder();
                                 if (len >= 1)
-                                    age = age + bf[point + num1].ToString() + "(Years)";
+                                    age.Append(bf[point + num1]).Append("(Years)");
                                 if (len >= 2)
                                 {
                                     this.GetData16(out dt, 2, point + num1 + 1, bf);
-                                    age = age + " " + dt.ToString() + "(Month)";
+                                    age.Append(" ").Append(dt).Append("(Month)");
                                 }
                                 if (len >= 4)
                                 {
                                     this.GetData16(out dt, 2, point + num1 + 3, bf);
-                                    age = age + dt.ToString() + "/";
+                                    age.Append(dt).Append("/");
                                 }
                                 if (len >= 6)
-                                    age = age + bf[point + num1 + 5].ToString() + "/";
+                                    age.Append(bf[point + num1 + 5]).Append("/");
                                 if (len >= 7)
-                                    age += bf[point + num1 + 6].ToString();
+                                    age.Append(bf[point + num1 + 6]);
 
-                                mferFile.Age = age;
+                                mferFile.Age = age.ToString();
                                 break;
-                            case 132:
+                            case MFERdef.MWF_SEX:
                                 // Sex
                                 string sex = "";
                                 switch (bf[point + num1])
@@ -591,37 +494,38 @@
                                 mferFile.Sex = sex;
                                 break;
                             // MWF_TIM
-                            case 133:
-                                string text69 = "";
+                            case MFERdef.MWF_TIM:
+                                StringBuilder text69 = new StringBuilder();
                                 if (len >= 1)
                                 {
                                     this.GetData16(out int dt4, 2, point + num1, bf);
-                                    text69 = text69 + dt4.ToString() + "/";
+                                    text69.Append(dt4).Append("/");
                                 }
                                 if (len >= 3)
-                                    text69 = text69 + bf[point + num1 + 2].ToString() + "/";
+                                    text69.Append(bf[point + num1 + 2]).Append("/");
                                 if (len >= 4)
-                                    text69 = text69 + bf[point + num1 + 3].ToString() + " ";
+                                    text69.Append(bf[point + num1 + 3]).Append(" ");
                                 if (len >= 5)
-                                    text69 = text69 + bf[point + num1 + 4].ToString() + ":";
+                                    text69.Append(bf[point + num1 + 4]).Append(":");
                                 if (len >= 6)
-                                    text69 = text69 + bf[point + num1 + 5].ToString() + ":";
+                                    text69.Append(bf[point + num1 + 5]).Append(":");
                                 if (len >= 7)
-                                    text69 = text69 + bf[point + num1 + 6].ToString() + " ";
+                                    text69.Append(bf[point + num1 + 6]).Append(" ");
                                 if (len >= 8)
-                                    text69 = text69 + bf[point + num1 + 7].ToString() + ":";
+                                    text69.Append(bf[point + num1 + 7]).Append(":");
                                 if (len >= 9)
-                                    text69 = text69 + bf[point + num1 + 8].ToString() + ":";
+                                    text69.Append(bf[point + num1 + 8]).Append(":");
                                 if (len >= 10)
-                                    text69 += bf[point + num1 + 9].ToString();
-                                mferFile.MeasurementTime = text69;
+                                    text69.Append(bf[point + num1 + 9]);
+
+                                mferFile.MeasurementTime = text69.ToString();
                                 break;
-                            case 134:
+                            case MFERdef.MWF_MSS:
                                 // message
-                                string message = "";
+                                StringBuilder message = new StringBuilder(len);
                                 for (i = 0; i < len; ++i)
-                                    message += (char)bf[point + num3 + i];
-                                mferFile.Message = message;
+                                    message.Append((char)bf[point + num3 + i]);
+                                mferFile.Message = message.ToString();
                                 break;
                         }
                     }

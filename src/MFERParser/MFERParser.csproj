@@ -11,6 +11,7 @@
 		<Company></Company>
 		<PackageTags>MFER,Parser</PackageTags>
 		<Description>This package will help in parser mfer file.</Description>
+		<Copyright>Copyright Dang Thang</Copyright>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
